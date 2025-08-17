@@ -1,0 +1,5 @@
+{
+  "name": "Galaxy Shooter",
+  "description": "A classic retro-style space shooter game built with React and Tailwind CSS. Control your ship, dodge enemy fire, and clear the galaxy of invaders.",
+  "requestFramePermissions": []
+}
