@@ -1,28 +1,26 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   GAME_WIDTH, GAME_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED, 
   BULLET_SPEED, ENEMY_ROWS, ENEMY_COLS, ENEMY_WIDTH, ENEMY_HEIGHT, ENEMY_GAP, 
   ENEMY_SPEED, ENEMY_VERTICAL_SPEED, ENEMY_FIRE_RATE, MAX_PLAYER_BULLETS
-} from './constants';
-import type { GameObject, Enemy } from './types';
-import { GameScreen } from './components/GameScreen';
-import { StartScreen } from './components/StartScreen';
-import { GameOverScreen } from './components/GameOverScreen';
+} from './constants.js';
+import { GameScreen } from './components/GameScreen.jsx';
+import { StartScreen } from './components/StartScreen.jsx';
+import { GameOverScreen } from './components/GameOverScreen.jsx';
 
-const App: React.FC = () => {
-  const [gameStarted, setGameStarted] = useState<boolean>(false);
-  const [gameOver, setGameOver] = useState<boolean>(false);
-  const [score, setScore] = useState<number>(0);
-  const [playerPos, setPlayerPos] = useState<GameObject>({ id: 0, x: GAME_WIDTH / 2 - PLAYER_WIDTH / 2, y: GAME_HEIGHT - PLAYER_HEIGHT - 20 });
-  const [bullets, setBullets] = useState<GameObject[]>([]);
-  const [enemies, setEnemies] = useState<Enemy[]>([]);
-  const [enemyBullets, setEnemyBullets] = useState<GameObject[]>([]);
-  const [enemyDirection, setEnemyDirection] = useState<number>(1);
-  const keysPressed = useRef<Record<string, boolean>>({});
+const App = () => {
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0);
+  const [playerPos, setPlayerPos] = useState({ id: 0, x: GAME_WIDTH / 2 - PLAYER_WIDTH / 2, y: GAME_HEIGHT - PLAYER_HEIGHT - 20 });
+  const [bullets, setBullets] = useState([]);
+  const [enemies, setEnemies] = useState([]);
+  const [enemyBullets, setEnemyBullets] = useState([]);
+  const [enemyDirection, setEnemyDirection] = useState(1);
+  const keysPressed = useRef({});
 
   const createEnemies = useCallback(() => {
-    const newEnemies: Enemy[] = [];
+    const newEnemies = [];
     for (let row = 0; row < ENEMY_ROWS; row++) {
       for (let col = 0; col < ENEMY_COLS; col++) {
         newEnemies.push({
@@ -48,17 +46,17 @@ const App: React.FC = () => {
   }, [createEnemies]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (e) => {
       keysPressed.current[e.key] = true;
       if (e.key === ' ' && gameStarted && !gameOver) {
         e.preventDefault();
         setBullets(prev => {
           if (prev.length <= MAX_PLAYER_BULLETS - 3) {
             const now = Date.now();
-            const newBullets: GameObject[] = [
-              { id: now, x: playerPos.x, y: playerPos.y }, // Left
-              { id: now + 1, x: playerPos.x + PLAYER_WIDTH / 2 - 3, y: playerPos.y }, // Center
-              { id: now + 2, x: playerPos.x + PLAYER_WIDTH - 6, y: playerPos.y }, // Right
+            const newBullets = [
+              { id: now, x: playerPos.x, y: playerPos.y },
+              { id: now + 1, x: playerPos.x + PLAYER_WIDTH / 2 - 3, y: playerPos.y },
+              { id: now + 2, x: playerPos.x + PLAYER_WIDTH - 6, y: playerPos.y },
             ];
             return [...prev, ...newBullets];
           }
@@ -66,7 +64,7 @@ const App: React.FC = () => {
         });
       }
     };
-    const handleKeyUp = (e: KeyboardEvent) => {
+    const handleKeyUp = (e) => {
       keysPressed.current[e.key] = false;
     };
 
@@ -97,55 +95,50 @@ const App: React.FC = () => {
     // Enemy bullet movement
     setEnemyBullets(prev => prev.map(b => ({ ...b, y: b.y + BULLET_SPEED })).filter(b => b.y < GAME_HEIGHT));
 
-    // Enemy movement
-    let wallHit = false;
-    let moveDown = false;
-    
-    setEnemies(prev => {
-      const newEnemies = prev.map(e => {
-        if (!wallHit && (e.x + ENEMY_WIDTH >= GAME_WIDTH || e.x <= 0)) {
-          wallHit = true;
-        }
-        return { ...e, x: e.x + ENEMY_SPEED * enemyDirection };
-      });
+    // Enemy movement and firing
+    setEnemies(prevEnemies => {
+      if (prevEnemies.length === 0) return [];
+      
+      const wallHit = prevEnemies.some(e => 
+        (e.x + ENEMY_WIDTH >= GAME_WIDTH && enemyDirection > 0) || (e.x <= 0 && enemyDirection < 0)
+      );
+      
+      let nextDirection = enemyDirection;
+      let movedEnemies = prevEnemies;
 
       if (wallHit) {
-        setEnemyDirection(prevDir => -prevDir);
-        moveDown = true;
+        nextDirection = -enemyDirection;
+        setEnemyDirection(nextDirection);
+        movedEnemies = movedEnemies.map(e => ({ ...e, y: e.y + ENEMY_VERTICAL_SPEED }));
       }
+      
+      movedEnemies = movedEnemies.map(e => ({ ...e, x: e.x + ENEMY_SPEED * nextDirection }));
 
-      if (moveDown) {
-        return newEnemies.map(e => ({ ...e, y: e.y + ENEMY_VERTICAL_SPEED }));
-      }
-      return newEnemies;
-    });
-
-    // Enemy firing
-    setEnemies(prev => {
-      prev.forEach(enemy => {
+      movedEnemies.forEach(enemy => {
         if (Math.random() < ENEMY_FIRE_RATE) {
-          setEnemyBullets(eb => [...eb, { id: Date.now() + enemy.id, x: enemy.x + ENEMY_WIDTH / 2 - 2, y: enemy.y + ENEMY_HEIGHT }]);
+          setEnemyBullets(eb => [...eb, { id: Date.now() + Math.random(), x: enemy.x + ENEMY_WIDTH / 2 - 2, y: enemy.y + ENEMY_HEIGHT }]);
         }
       });
-      return prev;
+
+      return movedEnemies;
     });
 
-    // Collision detection
-    // Bullets vs Enemies
-    const newBullets = [...bullets];
-    let newEnemies = [...enemies];
+    // Collision detection: Bullets vs Enemies
+    const bulletsHit = new Set();
+    const enemiesHit = new Set();
     let scoreToAdd = 0;
 
-    newBullets.forEach((bullet, bIndex) => {
-      newEnemies.forEach((enemy, eIndex) => {
+    bullets.forEach((bullet) => {
+      enemies.forEach((enemy) => {
+        if (bulletsHit.has(bullet.id) || enemiesHit.has(enemy.id)) return;
         if (
           bullet.x < enemy.x + ENEMY_WIDTH &&
           bullet.x + 6 > enemy.x &&
           bullet.y < enemy.y + ENEMY_HEIGHT &&
           bullet.y + 15 > enemy.y
         ) {
-          newBullets.splice(bIndex, 1);
-          newEnemies.splice(eIndex, 1);
+          bulletsHit.add(bullet.id);
+          enemiesHit.add(enemy.id);
           scoreToAdd += 10;
         }
       });
@@ -153,37 +146,32 @@ const App: React.FC = () => {
 
     if (scoreToAdd > 0) {
       setScore(s => s + scoreToAdd);
-      setBullets(newBullets);
-      setEnemies(newEnemies);
+      setBullets(prev => prev.filter(b => !bulletsHit.has(b.id)));
+      setEnemies(prev => prev.filter(e => !enemiesHit.has(e.id)));
     }
 
-    // Enemy Bullets vs Player
-    enemyBullets.forEach(bullet => {
-      if (
-        bullet.x < playerPos.x + PLAYER_WIDTH &&
-        bullet.x + 4 > playerPos.x &&
-        bullet.y < playerPos.y + PLAYER_HEIGHT &&
-        bullet.y + 10 > playerPos.y
-      ) {
-        setGameOver(true);
-      }
-    });
-    
-    // Enemies vs Player or bottom
-    enemies.forEach(enemy => {
-        if(
-            enemy.y + ENEMY_HEIGHT > GAME_HEIGHT ||
-            (enemy.x < playerPos.x + PLAYER_WIDTH &&
-            enemy.x + ENEMY_WIDTH > playerPos.x &&
-            enemy.y < playerPos.y + PLAYER_HEIGHT &&
-            enemy.y + ENEMY_HEIGHT > playerPos.y)
-        ) {
-            setGameOver(true);
-        }
-    });
+    // Game Over conditions
+    const isPlayerHit = enemyBullets.some(bullet => 
+      bullet.x < playerPos.x + PLAYER_WIDTH &&
+      bullet.x + 4 > playerPos.x &&
+      bullet.y < playerPos.y + PLAYER_HEIGHT &&
+      bullet.y + 10 > playerPos.y
+    );
 
-    if(enemies.length === 0 && gameStarted){
-        // Win condition, start new level
+    const isEnemyCollision = enemies.some(enemy =>
+      enemy.y + ENEMY_HEIGHT > GAME_HEIGHT ||
+      (enemy.x < playerPos.x + PLAYER_WIDTH &&
+       enemy.x + ENEMY_WIDTH > playerPos.x &&
+       enemy.y < playerPos.y + PLAYER_HEIGHT &&
+       enemy.y + ENEMY_HEIGHT > playerPos.y)
+    );
+
+    if (isPlayerHit || isEnemyCollision) {
+      setGameOver(true);
+    }
+    
+    // Win condition
+    if (enemies.length === 0 && gameStarted && !gameOver){
         createEnemies();
         setScore(s => s + 100); // Level clear bonus
     }

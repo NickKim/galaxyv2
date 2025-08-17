@@ -1,11 +1,6 @@
-
 import React from 'react';
 
-interface StartScreenProps {
-  onStart: () => void;
-}
-
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
+export const StartScreen = ({ onStart }) => {
   return (
     <div className="w-full h-full flex flex-col justify-center items-center text-white bg-black bg-opacity-70">
       <h1 className="text-6xl font-bold text-cyan-400 mb-4" style={{ textShadow: '0 0 10px #0ff' }}>GALAXY SHOOTER</h1>

@@ -1,18 +1,8 @@
-
 import React from 'react';
-import type { GameObject, Enemy } from '../types';
-import { PLAYER_WIDTH, PLAYER_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT } from '../constants';
-
-interface GameScreenProps {
-  playerPos: GameObject;
-  bullets: GameObject[];
-  enemies: Enemy[];
-  enemyBullets: GameObject[];
-  score: number;
-}
+import { PLAYER_WIDTH, PLAYER_HEIGHT, ENEMY_WIDTH, ENEMY_HEIGHT } from '../constants.js';
 
 // Player Ship SVG Component
-const PlayerShip: React.FC = () => (
+const PlayerShip = () => (
   <svg width={PLAYER_WIDTH} height={PLAYER_HEIGHT} viewBox="0 0 50 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M25 0L50 20H0L25 0Z" className="fill-cyan-400" />
     <path d="M20 15H30V20H20V15Z" className="fill-gray-400" />
@@ -20,7 +10,7 @@ const PlayerShip: React.FC = () => (
 );
 
 // Enemy Ship SVG Component
-const EnemyShip: React.FC = () => (
+const EnemyShip = () => (
   <svg width={ENEMY_WIDTH} height={ENEMY_HEIGHT} viewBox="0 0 40 30" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M20 30L0 10H10L20 20L30 10H40L20 30Z" className="fill-red-500" />
     <circle cx="20" cy="10" r="5" className="fill-green-400" />
@@ -28,7 +18,7 @@ const EnemyShip: React.FC = () => (
 );
 
 
-export const GameScreen: React.FC<GameScreenProps> = ({ playerPos, bullets, enemies, enemyBullets, score }) => {
+export const GameScreen = ({ playerPos, bullets, enemies, enemyBullets, score }) => {
   return (
     <>
       <div className="absolute top-2 left-2 text-white text-xl">SCORE: {score}</div>
